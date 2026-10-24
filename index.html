@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Undian Tugas Proyek Kelompok Berhasil</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f7f6; padding: 20px; text-align: center; color: #2c3e50; }
+        .container { max-width: 500px; background: white; margin: 20px auto; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 4px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
+        button { background: #27ae60; color: white; border: none; cursor: pointer; font-weight: bold; margin-top: 15px; }
+        button:hover { background: #219653; }
+        button:disabled { background: #bdc3c7; cursor: not-allowed; }
+        .hasil { margin-top: 15px; padding: 15px; background: #e8f8f5; border: 1px solid #2cc7a0; border-radius: 4px; display: none; font-weight: bold; color: #117a65; }
+        .tabel-container { max-width: 500px; margin: 30px auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #2980b9; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .kosong { text-align: center; color: #7f8c8d; font-style: italic; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🎰 Undian Tugas Proyek Kelompok</h2>
+    <p>Silakan pilih Kelas dan Kelompok Anda untuk memilih tugas secara acak.</p>
+    
+    <select id="pilihKelas" onchange="updateDropdownKelompok()">
+        <option value="">-- Pilih Kelas --</option>
+        <option value="A">Kelas A</option>
+        <option value="B">Kelas B</option>
+    </select>
+
+    <select id="pilihKelompok" disabled>
+        <option value="">-- Pilih Kelas Terlebih Dahulu --</option>
+    </select>
+    
+    <button id="btnUndi" onclick="kirimUndian()" disabled>MEMUAT DATA...</button>
+    <div id="boxHasil" class="hasil"></div>
+</div>
+
+<div class="tabel-container">
+    <h3>📊 Papan Hasil Undian (Real-Time)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Kelas</th>
+                <th>Kelompok</th>
+                <th>Tugas Yang Didapat</th>
+            </tr>
+        </thead>
+        <tbody id="bodyTabel">
+            <tr>
+                <td colspan="3" class="kosong">Memuat data papan undian...</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // PASTE URL WEB APP BARU ANDA DI SINI
+    const API_URL = "https://script.google.com/macros/s/AKfycbxxL6lnUCPB8pGvyJDtGos6W7GCLllEnne8xBtp__F5IWdpQTF0aPOq4QUMz21uG7c/exec"; 
+
+    let dataKelompokGlobal = { kelompokA: [], kelompokB: [] };
+
+    window.onload = muatDataAwal;
+
+    function panggilJSONP(url) {
+        return new Promise((resolve, reject) => {
+            const namaCallback = 'callback_' + Math.round(100000 * Math.random());
+            window[namaCallback] = function(data) {
+                delete window[namaCallback];
+                document.body.removeChild(script);
+                resolve(data);
+            };
+            const script = document.createElement('script');
+            script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'callback=' + namaCallback;
+            script.onerror = reject;
+            document.body.appendChild(script);
+        });
+    }
+
+    async function muatDataAwal() {
+        try {
+            const data = await panggilJSONP(API_URL);
+            dataKelompokGlobal.kelompokA = data.kelompokA || [];
+            dataKelompokGlobal.kelompokB = data.kelompokB || [];
+
+            document.getElementById("btnUndi").innerText = "KLIK UNTUK UNDI MATERI";
+            updateDropdownKelompok();
+
+            const tbody = document.getElementById("bodyTabel");
+            tbody.innerHTML = "";
+
+            if (!data.log || data.log.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="kosong">Belum ada kelompok yang mengundi.</td></tr>`;
+                return;
+            }
+
+            data.log.forEach(item => {
+                const row = `<tr>
+                    <td><b>Kelas ${item.kelas}</b></td>
+                    <td><b>${item.kelompok}</b></td>
+                    <td>✨ ${item.materi}</td>
+                </tr>`;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById("bodyTabel").innerHTML = `<tr><td colspan="3" class="kosong" style="color:red;">Gagal terhubung ke database server Google.</td></tr>`;
+        }
+    }
+
+    function updateDropdownKelompok() {
+        const kelas = document.getElementById("pilihKelas").value;
+        const selectKelompok = document.getElementById("pilihKelompok");
+        const btn = document.getElementById("btnUndi");
+
+        selectKelompok.innerHTML = "";
+
+        if (!kelas) {
+            selectKelompok.innerHTML = '<option value="">-- Pilih Kelas Terlebih Dahulu --</option>';
+            selectKelompok.disabled = true;
+            btn.disabled = true;
+            return;
+        }
+
+        const daftar = kelas === "A" ? dataKelompokGlobal.kelompokA : dataKelompokGlobal.kelompokB;
+
+        if (daftar.length === 0) {
+            selectKelompok.innerHTML = '<option value="">-- Semua Kelompok Kelas Ini Sudah Mengundi --</option>';
+            selectKelompok.disabled = true;
+            btn.disabled = true;
+        } else {
+            selectKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>';
+            daftar.forEach(k => {
+                let opt = document.createElement('option');
+                opt.value = k;
+                opt.innerText = k;
+                selectKelompok.appendChild(opt);
+            });
+            selectKelompok.disabled = false;
+            btn.disabled = false;
+        }
+    }
+
+    async function kirimUndian() {
+        const kelas = document.getElementById("pilihKelas").value;
+        const kelompok = document.getElementById("pilihKelompok").value;
+        const btn = document.getElementById("btnUndi");
+        const boxHasil = document.getElementById("boxHasil");
+        
+        if (!kelas || !kelompok) return;
+
+        if (!confirm(`Apakah Anda benar mewakili ${kelompok} dari Kelas ${kelas}? Pilihan tidak bisa diulang.`)) return;
+
+        btn.disabled = true;
+        btn.innerText = "Mengundi...";
+        boxHasil.style.display = "none";
+
+        try {
+            const urlUndi = `${API_URL}?action=undi&kelas=${encodeURIComponent(kelas)}&kelompok=${encodeURIComponent(kelompok)}`;
+            const data = await panggilJSONP(urlUndi);
+            
+            if (data.status === "success") {
+                boxHasil.innerHTML = `Sukses!<br>${kelompok} (Kelas ${kelas}) mendapatkan:<br><span style="font-size:18px; color:#117a65;">🎯 ${data.materi}</span>`;
+                boxHasil.style.display = "block";
+                await muatDataAwal();
+            } else {
+                alert("Gagal: " + data.message);
+                await muatDataAwal();
+            }
+        } catch (error) {
+            alert("Terjadi masalah koneksi jaringan.");
+            console.error(error);
+        }
+    }
+</script>
+</body>
+</html>
