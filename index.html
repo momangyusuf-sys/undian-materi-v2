@@ -187,15 +187,25 @@
 
         btn.disabled = true;
         
-        // --- EFEEK ANIMASI MENGUNDI (SLOT MACHINE) ---
+        btn.disabled = true;
+        
+        // --- EFEK ANIMASI MENGUNDI (TITIK-TITIK BERGERAK) ---
         boxHasil.style.display = "block";
-        let teksAcak = ["Mencari Tugas...", "Tugas 1", "Tugas 2", "Tugas 3", "Tugas 4", "Tugas 5"];
+        
+        let teksAcak = ["Tugas 1", "Tugas 2", "Tugas 3", "Tugas 4", "Tugas 5", "Tugas 6"];
         let count = 0;
+        let titikCount = 0;
+
         let intervalAnimasi = setInterval(() => {
-            btn.innerText = `🎰 ${teksAcak[count % teksAcak.length]}`;
+            // Animasi titik-titik bertambah pada butang (tanpa titik -> . -> .. -> ...)
+            let titik = ".".repeat(titikCount % 4);
+            btn.innerText = `🎰 Mengundi${titik}`;
+            titikCount++;
+
+            // Animasi teks tugas berganti-ganti di dalam kotak hasil
             boxHasil.innerHTML = `Sedang mengundi untuk ${kelompok}...<br><span class="materi-acak">🔄 ${teksAcak[count % teksAcak.length]}</span>`;
             count++;
-        }, 150);
+        }, 150); // Kecepatan animasi (150ms)
 
         try {
             const urlUndi = `${API_URL}?action=undi&kelas=${encodeURIComponent(kelas)}&kelompok=${encodeURIComponent(kelompok)}`;
